@@ -11,7 +11,7 @@ import (
 )
 
 // FetchAllImagesRefs returns a flat list of nested bundles and every image reference for a specific bundle
-func (o *Bundle) FetchAllImagesRefs(concurrency int, ui Logger, sigFetcher SignatureFetcher) ([]*Bundle, error) {
+func (o *Bundle) FetchAllImagesRefs(concurrency int, ui Logger, artifactFetcher ArtifactFetcher) ([]*Bundle, error) {
 	bundles, _, err := o.AllImagesLockRefs(concurrency, ui)
 	if err != nil {
 		return nil, err
@@ -24,13 +24,13 @@ func (o *Bundle) FetchAllImagesRefs(concurrency int, ui Logger, sigFetcher Signa
 		for _, ref := range bundle.cachedImageRefs.All() {
 			imgs = append(imgs, ref.ImageRef)
 		}
-		refs, err := sigFetcher.FetchForImageRefs(imgs)
+		refs, err := artifactFetcher.FetchForImageRefs(imgs)
 		if err != nil {
 			return nil, err
 		}
 
 		for _, ref := range refs {
-			bundle.cachedImageRefs.StoreImageRef(NewImageRefWithType(ref, SignatureImage))
+			bundle.cachedImageRefs.StoreImageRef(NewArtifactRefWithType(ref))
 		}
 
 		// Get the Locations image for this particular bundle

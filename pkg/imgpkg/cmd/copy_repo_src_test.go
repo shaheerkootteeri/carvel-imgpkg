@@ -53,11 +53,11 @@ func TestMain(m *testing.M) {
 	imageSet := imageset.NewImageSet(1, confUI, tagGen)
 
 	subject = CopyRepoSrc{
-		ui:                 uiLogger,
-		imageSet:           imageSet,
-		tarImageSet:        imageset.NewTarImageSet(imageSet, 1, confUI),
-		Concurrency:        1,
-		signatureRetriever: &fakeSignatureRetriever{},
+		ui:                uiLogger,
+		imageSet:          imageSet,
+		tarImageSet:       imageset.NewTarImageSet(imageSet, 1, confUI),
+		Concurrency:       1,
+		artifactRetriever: &fakeSignatureRetriever{},
 	}
 
 	os.Exit(m.Run())
@@ -1172,7 +1172,7 @@ func (f fakeSignatureRetriever) Fetch(images *imageset.UnprocessedImageRefs) (*i
 	return imageset.NewUnprocessedImageRefs(), nil
 }
 
-var _ SignatureRetriever = new(fakeSignatureRetriever)
+var _ ArtifactRetriever = new(fakeSignatureRetriever)
 
 func assertTarballContainsEveryLayer(t *testing.T, imageTarPath string) {
 	path := imagetar.NewTarReader(imageTarPath)

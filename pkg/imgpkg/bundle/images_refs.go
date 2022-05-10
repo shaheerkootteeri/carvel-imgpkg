@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
+	"github.com/vmware-tanzu/carvel-imgpkg/pkg/imgpkg/artifacts"
 	"github.com/vmware-tanzu/carvel-imgpkg/pkg/imgpkg/lockconfig"
 )
 
@@ -32,6 +33,10 @@ const (
 	ContentImage ImageType = "Image"
 	// SignatureImage Image that contains a signature
 	SignatureImage ImageType = "Signature"
+	// SBOMImage Image that contains a signature
+	SBOMImage ImageType = "SBOM"
+	// AttestationImage Image that contains a signature
+	AttestationImage ImageType = "Attestation"
 	// InternalImage Image that contains a signature
 	InternalImage ImageType = "Internal"
 )
@@ -58,6 +63,24 @@ func NewImageRefWithType(imgRef lockconfig.ImageRef, imageType ImageType) ImageR
 	}
 
 	return ImageRef{ImageRef: imgRef, IsBundle: &isBundle, Copiable: copiable, ImageType: imageType}
+}
+
+// NewArtifactRefWithType Constructs a new ImageRef based on the ImageType
+func NewArtifactRefWithType(artifactRef artifacts.ArtifactImageRef) ImageRef {
+	isBundle := false
+	var imageType ImageType
+	switch artifactRef.Type() {
+	case artifacts.Attestation:
+		imageType = AttestationImage
+	case artifacts.SBOM:
+		imageType = SBOMImage
+	case artifacts.Signature:
+		imageType = SignatureImage
+	default:
+		panic("Internal inconsistency: unknown type of artifact")
+	}
+
+	return ImageRef{ImageRef: artifactRef.ImageRef, IsBundle: &isBundle, Copiable: true, ImageType: imageType}
 }
 
 // Digest Image Digest

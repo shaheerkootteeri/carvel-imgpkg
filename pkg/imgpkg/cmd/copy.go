@@ -10,13 +10,13 @@ import (
 	regv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	"github.com/spf13/cobra"
+	"github.com/vmware-tanzu/carvel-imgpkg/pkg/imgpkg/artifacts"
 	"github.com/vmware-tanzu/carvel-imgpkg/pkg/imgpkg/bundle"
 	ctlimgset "github.com/vmware-tanzu/carvel-imgpkg/pkg/imgpkg/imageset"
 	"github.com/vmware-tanzu/carvel-imgpkg/pkg/imgpkg/internal/util"
 	"github.com/vmware-tanzu/carvel-imgpkg/pkg/imgpkg/lockconfig"
 	"github.com/vmware-tanzu/carvel-imgpkg/pkg/imgpkg/plainimage"
 	"github.com/vmware-tanzu/carvel-imgpkg/pkg/imgpkg/registry"
-	"github.com/vmware-tanzu/carvel-imgpkg/pkg/imgpkg/signature"
 )
 
 const rootBundleLabelKey string = "dev.carvel.imgpkg.copy.root-bundle"
@@ -30,7 +30,7 @@ type CopyOptions struct {
 	LockOutputFlags LockOutputFlags
 	TarFlags        TarFlags
 	RegistryFlags   RegistryFlags
-	SignatureFlags  SignatureFlags
+	ArtifactsFlags  ArtifactFlags
 
 	RepoDst string
 
@@ -79,7 +79,7 @@ func NewCopyCmd(o *CopyOptions) *cobra.Command {
 	o.LockOutputFlags.SetOnCopy(cmd)
 	o.TarFlags.Set(cmd)
 	o.RegistryFlags.Set(cmd)
-	o.SignatureFlags.Set(cmd)
+	o.ArtifactsFlags.Set(cmd)
 	cmd.Flags().StringVar(&o.RepoDst, "to-repo", "", "Location to upload assets")
 	cmd.Flags().IntVar(&o.Concurrency, "concurrency", 5, "Concurrency")
 	cmd.Flags().BoolVar(&o.IncludeNonDistributable, "include-non-distributable-layers", false,
@@ -118,11 +118,11 @@ func (c *CopyOptions) Run() error {
 	imageSet := ctlimgset.NewImageSet(c.Concurrency, prefixedLogger, tagGen)
 	tarImageSet := ctlimgset.NewTarImageSet(imageSet, c.Concurrency, prefixedLogger)
 
-	var signatureRetriever SignatureRetriever
-	if c.SignatureFlags.CopyCosignSignatures {
-		signatureRetriever = signature.NewSignatures(signature.NewCosign(reg), c.Concurrency)
+	var artifactRetriever ArtifactRetriever
+	if c.ArtifactsFlags.CopyCosignSignatures {
+		artifactRetriever = artifacts.NewArtifacts(artifacts.NewCosign(reg), c.Concurrency)
 	} else {
-		signatureRetriever = signature.NewNoop()
+		artifactRetriever = artifacts.NewNoop()
 	}
 
 	repoSrc := CopyRepoSrc{
@@ -133,11 +133,11 @@ func (c *CopyOptions) Run() error {
 		IncludeNonDistributable: c.IncludeNonDistributable,
 		Concurrency:             c.Concurrency,
 
-		ui:                 levelLogger,
-		registry:           registry.NewRegistryWithProgress(reg, imagesUploaderLogger),
-		imageSet:           imageSet,
-		tarImageSet:        tarImageSet,
-		signatureRetriever: signatureRetriever,
+		ui:                levelLogger,
+		registry:          registry.NewRegistryWithProgress(reg, imagesUploaderLogger),
+		imageSet:          imageSet,
+		tarImageSet:       tarImageSet,
+		artifactRetriever: artifactRetriever,
 	}
 
 	switch {

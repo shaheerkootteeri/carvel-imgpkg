@@ -18,7 +18,8 @@ import (
 	"github.com/vmware-tanzu/carvel-imgpkg/pkg/imgpkg/registry"
 )
 
-type SignatureRetriever interface {
+// ArtifactRetriever Retrieves all the artifacts associated with the provided images
+type ArtifactRetriever interface {
 	Fetch(images *imageset.UnprocessedImageRefs) (*imageset.UnprocessedImageRefs, error)
 }
 
@@ -30,11 +31,11 @@ type CopyRepoSrc struct {
 	IncludeNonDistributable bool
 	Concurrency             int
 
-	ui                 util.UIWithLevels
-	imageSet           ctlimgset.ImageSet
-	tarImageSet        ctlimgset.TarImageSet
-	registry           registry.ImagesReaderWriter
-	signatureRetriever SignatureRetriever
+	ui                util.UIWithLevels
+	imageSet          ctlimgset.ImageSet
+	tarImageSet       ctlimgset.TarImageSet
+	registry          registry.ImagesReaderWriter
+	artifactRetriever ArtifactRetriever
 }
 
 func (c CopyRepoSrc) CopyToTar(dstPath string) error {
@@ -139,15 +140,15 @@ func (c CopyRepoSrc) getAllSourceImages() (*ctlimgset.UnprocessedImageRefs, []*c
 		return nil, nil, err
 	}
 
-	c.ui.Debugf("Fetching signatures\n")
+	c.ui.Debugf("Fetching artifacts (signatures, attestations and SBOMs)\n")
 
-	signatures, err := c.signatureRetriever.Fetch(unprocessedImageRefs)
+	artifacts, err := c.artifactRetriever.Fetch(unprocessedImageRefs)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	for _, signature := range signatures.All() {
-		unprocessedImageRefs.Add(signature)
+	for _, artifact := range artifacts.All() {
+		unprocessedImageRefs.Add(artifact)
 	}
 
 	return unprocessedImageRefs, bundles, nil

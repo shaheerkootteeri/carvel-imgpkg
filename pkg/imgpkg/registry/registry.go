@@ -217,7 +217,7 @@ func (r SimpleRegistry) CloneWithSingleAuth(imageRef regname.Tag) (Registry, err
 
 	imgAuth, err := r.keychain.Resolve(imageRef)
 	if err != nil {
-		return nil, err
+		return nil, registryErr(err, "Resolve credentials for target")
 	}
 
 	keychain := auth.NewSingleAuthKeychain(imgAuth)
@@ -323,7 +323,7 @@ func (r *SimpleRegistry) Get(ref regname.Reference) (*regremote.Descriptor, erro
 	}
 	overriddenRef, err := regname.ParseReference(ref.String(), r.refOpts...)
 	if err != nil {
-		return nil, err
+		return nil, registryErr(err, "Parsing references")
 	}
 	opts, err := r.readOpts(overriddenRef)
 	if err != nil {
@@ -339,7 +339,7 @@ func (r *SimpleRegistry) Digest(ref regname.Reference) (regv1.Hash, error) {
 	}
 	overriddenRef, err := regname.ParseReference(ref.String(), r.refOpts...)
 	if err != nil {
-		return regv1.Hash{}, err
+		return regv1.Hash{}, registryErr(err, "Parsing references")
 	}
 
 	opts, err := r.readOpts(overriddenRef)
@@ -350,7 +350,7 @@ func (r *SimpleRegistry) Digest(ref regname.Reference) (regv1.Hash, error) {
 	if err != nil {
 		getDesc, err := regremote.Get(overriddenRef, opts...)
 		if err != nil {
-			return regv1.Hash{}, err
+			return regv1.Hash{}, registryErr(err, "get remote descriptor")
 		}
 		return getDesc.Digest, nil
 	}
@@ -365,7 +365,7 @@ func (r *SimpleRegistry) Image(ref regname.Reference) (regv1.Image, error) {
 	}
 	overriddenRef, err := regname.ParseReference(ref.String(), r.refOpts...)
 	if err != nil {
-		return nil, err
+		return nil, registryErr(err, "Parsing references")
 	}
 
 	opts, err := r.readOpts(overriddenRef)
@@ -386,7 +386,7 @@ func (r *SimpleRegistry) MultiWrite(imageOrIndexesToUpload map[regname.Reference
 		}
 		overriddenRef, err := regname.ParseReference(ref.String(), r.refOpts...)
 		if err != nil {
-			return err
+			return registryErr(err, "Parsing references")
 		}
 		singleRef = overriddenRef
 
@@ -411,7 +411,7 @@ func (r *SimpleRegistry) WriteImage(ref regname.Reference, img regv1.Image, upda
 	}
 	overriddenRef, err := regname.ParseReference(ref.String(), r.refOpts...)
 	if err != nil {
-		return err
+		return registryErr(err, "Parsing references")
 	}
 
 	opts, err := r.writeOpts(overriddenRef)
@@ -423,7 +423,7 @@ func (r *SimpleRegistry) WriteImage(ref regname.Reference, img regv1.Image, upda
 	}
 	err = regremote.Write(overriddenRef, img, opts...)
 	if err != nil {
-		return fmt.Errorf("Writing image: %s", err)
+		return registryErr(fmt.Errorf("Writing image: %s", err), "Upload Image to registry")
 	}
 
 	return nil
@@ -436,7 +436,7 @@ func (r *SimpleRegistry) Index(ref regname.Reference) (regv1.ImageIndex, error) 
 	}
 	overriddenRef, err := regname.ParseReference(ref.String(), r.refOpts...)
 	if err != nil {
-		return nil, err
+		return nil, registryErr(err, "Parsing references")
 	}
 	opts, err := r.readOpts(overriddenRef)
 	if err != nil {
@@ -452,7 +452,7 @@ func (r *SimpleRegistry) WriteIndex(ref regname.Reference, idx regv1.ImageIndex)
 	}
 	overriddenRef, err := regname.ParseReference(ref.String(), r.refOpts...)
 	if err != nil {
-		return err
+		return registryErr(err, "Parsing references")
 	}
 
 	opts, err := r.writeOpts(overriddenRef)
@@ -462,7 +462,7 @@ func (r *SimpleRegistry) WriteIndex(ref regname.Reference, idx regv1.ImageIndex)
 
 	err = regremote.WriteIndex(overriddenRef, idx, opts...)
 	if err != nil {
-		return fmt.Errorf("Writing image index: %s", err)
+		return registryErr(fmt.Errorf("Writing image index: %s", err), "Upload Index manifest to registry")
 	}
 
 	return nil
@@ -475,7 +475,7 @@ func (r *SimpleRegistry) WriteTag(ref regname.Tag, taggagle regremote.Taggable) 
 	}
 	overriddenRef, err := regname.NewTag(ref.String(), r.refOpts...)
 	if err != nil {
-		return err
+		return registryErr(err, "Parsing references")
 	}
 
 	opts, err := r.writeOpts(overriddenRef)
@@ -485,7 +485,7 @@ func (r *SimpleRegistry) WriteTag(ref regname.Tag, taggagle regremote.Taggable) 
 
 	err = regremote.Tag(overriddenRef, taggagle, opts...)
 	if err != nil {
-		return fmt.Errorf("Tagging image: %s", err)
+		return registryErr(fmt.Errorf("Tagging image: %s", err), "Tag referenced image")
 	}
 
 	return nil
@@ -495,11 +495,11 @@ func (r *SimpleRegistry) WriteTag(ref regname.Tag, taggagle regremote.Taggable) 
 func (r *SimpleRegistry) ListTags(repo regname.Repository) ([]string, error) {
 	overriddenRepo, err := regname.NewRepository(repo.Name(), r.refOpts...)
 	if err != nil {
-		return nil, err
+		return nil, registryErr(err, "get new repository")
 	}
 	repoRef, err := regname.ParseReference(overriddenRepo.String(), r.refOpts...)
 	if err != nil {
-		return nil, err
+		return nil, registryErr(err, "Parsing references")
 	}
 	opts, err := r.readOpts(repoRef)
 	if err != nil {
@@ -515,7 +515,7 @@ func (r *SimpleRegistry) FirstImageExists(digests []string) (string, error) {
 	for _, img := range digests {
 		ref, parseErr := regname.NewDigest(img)
 		if parseErr != nil {
-			return "", parseErr
+			return "", registryErr(parseErr, "get new digest")
 		}
 		_, err = r.Digest(ref)
 		if err == nil {

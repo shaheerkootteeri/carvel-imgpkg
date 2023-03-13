@@ -91,7 +91,7 @@ func (r *MultiRoundTripperStorage) CreateRoundTripper(reg regname.Registry, auth
 
 	rt, err := transport.NewWithContext(context.Background(), reg, auth, r.baseRoundTripper, []string{scope})
 	if err != nil {
-		return nil, fmt.Errorf("Unable to create round tripper: %s", err)
+		return nil, registryErr(fmt.Errorf("Unable to create round tripper: %s", err), "CreateRoundTripper")
 	}
 
 	if _, ok := r.transports[reg.RegistryStr()]; !ok {
@@ -144,7 +144,7 @@ func (r *SingleTripperStorage) CreateRoundTripper(reg regname.Registry, auth aut
 
 	rt, err := transport.NewWithContext(context.Background(), reg, auth, r.baseRoundTripper, []string{scope})
 	if err != nil {
-		return nil, fmt.Errorf("Unable to create round tripper: %s", err)
+		return nil, registryErr(fmt.Errorf("Unable to create round tripper: %s", err), "CreateRoundTripper")
 	}
 
 	r.transport = rt

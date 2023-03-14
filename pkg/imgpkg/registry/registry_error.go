@@ -5,15 +5,15 @@ import (
 )
 
 func registryErr(err error, action string) error {
-	return resourcePlainErr{err, action}
+	return registryPlainErr{err, action}
 }
 
-type resourcePlainErr struct {
+type registryPlainErr struct {
 	err    error
 	action string
 }
 
-func (e resourcePlainErr) Error() string {
+func (e registryPlainErr) Error() string {
 	return fmt.Sprintf("%s : go-containerregistry says: %s",
 		e.action, e.err)
 }

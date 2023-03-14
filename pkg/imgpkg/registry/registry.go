@@ -350,7 +350,7 @@ func (r *SimpleRegistry) Digest(ref regname.Reference) (regv1.Hash, error) {
 	if err != nil {
 		getDesc, err := regremote.Get(overriddenRef, opts...)
 		if err != nil {
-			return regv1.Hash{}, registryErr(err, "get remote descriptor")
+			return regv1.Hash{}, err
 		}
 		return getDesc.Digest, nil
 	}

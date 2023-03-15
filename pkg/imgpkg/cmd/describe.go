@@ -4,15 +4,17 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"sort"
+	"strings"
 
 	goui "github.com/cppforlife/go-cli-ui/ui"
 	regname "github.com/google/go-containerregistry/pkg/name"
 	"github.com/spf13/cobra"
 	"github.com/vmware-tanzu/carvel-imgpkg/pkg/imgpkg/bundle"
 	"github.com/vmware-tanzu/carvel-imgpkg/pkg/imgpkg/internal/util"
-	"github.com/vmware-tanzu/carvel-imgpkg/pkg/imgpkg/v1"
+	v1 "github.com/vmware-tanzu/carvel-imgpkg/pkg/imgpkg/v1"
 	"sigs.k8s.io/yaml"
 )
 
@@ -174,8 +176,10 @@ func (p bundleTextPrinter) printAnnotations(annotations map[string]string, inden
 			annotationKeys = append(annotationKeys, key)
 		}
 		sort.Strings(annotationKeys)
+
 		for _, key := range annotationKeys {
-			annIndentLogger.Logf("%s: %s\n", key, annotations[key])
+			value := addIndentation(annotations[key], key)
+			annIndentLogger.Logf("%s: %s\n", key, value)
 		}
 	}
 }
@@ -199,4 +203,26 @@ func (p bundleYAMLPrinter) Print(description v1.Description) error {
 	p.logger.Logf(string(yamlDesc))
 
 	return nil
+}
+
+func addIndentation(annotationValue string, key string) string {
+	value := annotationValue
+	if strings.Contains(annotationValue, "\n") {
+		lengthOfKey := len(key)
+		annotationValues := strings.Split(annotationValue, "\n")
+		if strings.HasSuffix(annotationValues[0], ":") {
+			lengthbeforeSplit := len(annotationValues[0])
+			str := bytes.NewBufferString(annotationValues[0])
+			str.WriteString("\n")
+			for i := 1; i < len(annotationValues); i++ {
+				for i := 0; i < (lengthOfKey + lengthbeforeSplit); i++ {
+					str.WriteString(" ")
+				}
+				str.WriteString(annotationValues[i])
+				str.WriteString("\n")
+			}
+			value = str.String()
+		}
+	}
+	return value
 }
